@@ -69,7 +69,8 @@ class Model(nn.Module):
 
         x = self.convolutional(x)
         x = torch.flatten(x, 1)
-        c = self.classification(x)
-        b = self.box(x)
 
-        return (c, b)
+        return (
+            self.classification(x),
+            self.box(x)
+        )
