@@ -2,7 +2,7 @@
 
 A project for CPSC 3750: Artificial Intelligence using PyTorch.
 
-<img src="preprocess/character/waldo.png" alt="Waldo" width="400" />
+<img src="preprocess/character/waldo.png" alt="Waldo" width="200" />
 
 ## Prerequisites
 
