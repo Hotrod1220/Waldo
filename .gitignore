@@ -1,5 +1,6 @@
 # waldo
 model/
+preprocess/character/
 preprocess/dataset/
 preprocess/dynamic/
 preprocess/static/

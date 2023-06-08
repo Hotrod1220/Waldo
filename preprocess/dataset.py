@@ -41,7 +41,7 @@ def main() -> None:
             'x2': x2,
             'y2': y2
         }
-        for file in list(not_waldo.glob('*/*'))[:189]
+        for file in list(not_waldo.glob('*/*'))
         if file.is_file() and file.suffix.lower() in suffix
     ]
 

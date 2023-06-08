@@ -5,11 +5,11 @@ from itertools import combinations
 from pathlib import Path
 from PIL import (
     Image,
-    ImageDraw,
     ImageEnhance,
     ImageFilter,
     ImageOps
 )
+from secrets import SystemRandom
 
 
 def get_transparent_background() -> Image:
@@ -22,10 +22,10 @@ def get_transparent_background() -> Image:
     )
 
 
-def get_random_background(generator: np.random.RandomState) -> Image:
+def get_random_background(generator: SystemRandom) -> Image:
     width, height = 224, 224
 
-    option = np.arange(0, 255, 1)
+    option = range(0, 255, 1)
 
     red = generator.choice(option)
     green = generator.choice(option)
@@ -48,20 +48,16 @@ def main() -> None:
     waldo = dataset.joinpath('waldo')
     not_waldo = dataset.joinpath('not_waldo')
 
-    # localization = waldo.joinpath('localization')
-
     waldo.mkdir(parents=True, exist_ok=True)
     not_waldo.mkdir(parents=True, exist_ok=True)
 
-    # localization.mkdir(parents=True, exist_ok=True)
+    generator = SystemRandom()
 
-    # Open the original Waldo image
-    path = cwd.joinpath('character').joinpath('waldo.png')
-    character = Image.open(path)
-    character = character.convert('RGBA')
-
-    # generator = SystemRandom()
-    generator = np.random.RandomState()
+    # Open the original Waldo image(s)
+    images = [
+        Image.open(path).convert('RGBA')
+        for path in cwd.joinpath('character').glob('*.png')
+    ]
 
     callback = {
         'flip': ImageOps.flip,
@@ -105,15 +101,18 @@ def main() -> None:
 
     for i in range(iterate):
         # Transform Waldo using each possible combination
-        for j, transformation in enumerate(transformations):
-            filename = f"{i}_{j}_{path.name}"
+        for j, transformation in enumerate(transformations, 0):
+            # Select a random image of Waldo
+            character = generator.choice(images)
+
+            filename = f"{i}_{j}.png"
             destination = waldo.joinpath(filename)
 
             print(f"Processing: {filename}")
 
-            choice = generator.choice(choices)
+            selection = generator.choice(choices)
 
-            if choice:
+            if selection:
                 background = get_random_background(generator)
             else:
                 background = get_transparent_background()
@@ -139,8 +138,8 @@ def main() -> None:
 
             # Resize Waldo to be at least 28x28px
             width, height = temporary.size
-            x = generator.randint(28, width)
-            y = generator.randint(28, height)
+            x = generator.randrange(28, width)
+            y = generator.randrange(28, height)
 
             transform.thumbnail(
                 (x, y)
@@ -150,8 +149,8 @@ def main() -> None:
             maximum_x = width - x
             maximum_y = height - y
 
-            x = generator.randint(0, maximum_x)
-            y = generator.randint(0, maximum_y)
+            x = generator.randrange(0, maximum_x)
+            y = generator.randrange(maximum_y)
 
             temporary.paste(
                 transform,
@@ -173,12 +172,10 @@ def main() -> None:
             transparent.save(destination)
 
             # # Draw the bounding box
-            # destination = localization.joinpath(filename)
             # draw = ImageDraw.Draw(transparent)
-            # draw.rectangle(box, outline='green', width=3)
-            # transparent.save(destination)
-
+            # draw.rectangle(box, outline='green', width=2)
             # transparent.show()
+
             transform.close()
             temporary.close()
             transparent.close()
