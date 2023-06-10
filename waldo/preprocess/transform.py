@@ -1,29 +1,14 @@
-from pathlib import Path
+from __future__ import annotations
+
 from PIL import Image
+from waldo.constant import NOT_WALDO, SUFFIX
 
 
 def main() -> None:
-    cwd = Path.cwd()
-
-    # Create directories
-    dataset = cwd.joinpath('dataset')
-
-    not_waldo = dataset.joinpath('not_waldo')
-    not_waldo.mkdir(parents=True, exist_ok=True)
-
-    suffix = [
-        '.bmp',
-        '.gif',
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.webp'
-    ]
-
     files = [
         file
-        for file in not_waldo.glob('*/*')
-        if file.is_file() and file.suffix.lower() in suffix
+        for file in NOT_WALDO.glob('*/*')
+        if file.is_file() and file.suffix.lower() in SUFFIX
     ]
 
     size = (224, 224)

@@ -5,6 +5,7 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from typing import TYPE_CHECKING
+from waldo.constant import CWD
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -24,11 +25,12 @@ class WaldoDataset(Dataset):
         transformation: Callable | None = None
     ):
         super().__init__()
+
         self.annotation = annotation
         self.current = current
         self.device = device
-        self.transformation = transformation
         self.settings = settings
+        self.transformation = transformation
 
     def __len__(self) -> int:
         return len(self.annotation)
@@ -42,20 +44,13 @@ class WaldoDataset(Dataset):
         x2 = self.annotation.loc[index, 'x2'].astype('float')
         y2 = self.annotation.loc[index, 'y2'].astype('float')
 
-        box = (x1, y1, x2, y2)
+        box = [x1, y1, x2, y2]
         box = [coordinate / 224 for coordinate in box]
 
-        location = (
-            self.current
-            .joinpath('preprocess')
-            .joinpath(path)
-        )
+        location = CWD.joinpath(path)
 
         image = Image.open(location)
-        image = image.convert('RGB')
-
-        if self.transformation is not None:
-            image = self.transformation(image)
+        image = self.transformation(image)
 
         label = torch.tensor(label, dtype=torch.long)
         box = torch.tensor(box, dtype=torch.float)

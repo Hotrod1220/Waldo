@@ -1,10 +1,10 @@
 # waldo
-model/
-preprocess/character/
-preprocess/dataset/
-preprocess/dynamic/
-preprocess/static/
-preprocess/wallpaper/
+waldo/model/state
+waldo/preprocess/character/
+waldo/preprocess/dataset/
+waldo/preprocess/dynamic/
+waldo/preprocess/static/
+waldo/preprocess/wallpaper/
 
 *.7z
 *.bat

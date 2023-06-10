@@ -1,8 +1,11 @@
+-e .
+
 joblib
 matplotlib
 numpy
 pandas
 pillow
+tabulate
 torchinfo
 tqdm
 typing-extensions
@@ -10,4 +13,3 @@ typing-extensions
 --extra-index-url https://download.pytorch.org/whl/cu118
 torch
 torchvision
-torchaudio

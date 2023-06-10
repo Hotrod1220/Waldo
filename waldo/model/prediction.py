@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 
 from pathlib import Path
 from PIL import Image, ImageDraw
-from torchvision import transforms
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import numpy.typing as npt
-
+    from collections.abc import Callable
     from model import Model
     from torch.utils.data import DataLoader
     from typing_extensions import Any
@@ -24,45 +21,15 @@ class Predictor():
         examples: None = None,
         loader: DataLoader | None = None,
         mapping: dict[Any, Any] = None,
-        model: Model = None
+        model: Model = None,
+        transformation: Callable | None = None
     ):
-        self._model = model
-
         self.device = device
         self.examples = examples
         self.loader = loader
         self.mapping = mapping
-
-    @property
-    def model(self) -> Model:
-        return self._model
-
-    @model.setter
-    def model(self, model: Model) -> None:
-        self._model = model
-        self.model.to(self.device)
-
-    def _transform(self, image: Image) -> npt.NDArray:
-        size = (224, 224)
-        image = image.resize(size)
-        image = image.convert('RGB')
-        image = np.asarray(image)
-        image = image / 255.0
-
-        image = Image.fromarray(
-            np.uint8(image * 255)
-        )
-
-        transformation = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.5, 0.5, 0.5],
-                std=[0.5, 0.5, 0.5]
-            ),
-        ])
-
-        image = transformation(image)
-        return np.expand_dims(image, axis=0)
+        self.model = model
+        self.transformation = transformation
 
     @staticmethod
     def iou(x: tuple[float, ...], y: tuple[float, ...]) -> float:
@@ -182,10 +149,12 @@ class Predictor():
 
     def from_path(self, path: Path) -> list[dict[Any, Any]]:
         image = Image.open(path)
-        image = self._transform(image)
+        image = self.transformation(image)
+        image = image.unsqueeze(0)
 
         label, box = self.model(
-            torch.from_numpy(image).float()
+            image
+            .float()
             .to('cpu')
         )
 
@@ -194,11 +163,27 @@ class Predictor():
 
         x1, y1, x2, y2 = box.squeeze().tolist()
 
+        x1 = min(1, x1)
+        y1 = min(1, y1)
+        x2 = min(1, x2)
+        y2 = min(1, y2)
+
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = max(0, x2)
+        y2 = max(0, y2)
+
         w, h = (224, 224)
         x1 = int(w * x1)
         x2 = int(w * x2)
         y1 = int(h * y1)
         y2 = int(h * y2)
+
+        if y2 < y1:
+            y1, y2 = y2, y1
+
+        if x2 < x1:
+            x1, x2 = x2, x1
 
         p_box = (x1, y1, x2, y2)
         p_label = self.mapping[label]
@@ -257,10 +242,12 @@ class Predictor():
 
     def from_random(self, path: Path) -> list[dict[Any, Any]]:
         image = Image.open(path)
-        image = self._transform(image)
+        image = self.transformation(image)
+        image = image.unsqueeze(0)
 
         label, box = self.model(
-            torch.from_numpy(image).float()
+            image
+            .float()
             .to('cpu')
         )
 
@@ -269,11 +256,27 @@ class Predictor():
 
         x1, y1, x2, y2 = box.squeeze().tolist()
 
+        x1 = min(1, x1)
+        y1 = min(1, y1)
+        x2 = min(1, x2)
+        y2 = min(1, y2)
+
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = max(0, x2)
+        y2 = max(0, y2)
+
         w, h = (224, 224)
         x1 = int(w * x1)
         x2 = int(w * x2)
         y1 = int(h * y1)
         y2 = int(h * y2)
+
+        if y2 < y1:
+            y1, y2 = y2, y1
+
+        if x2 < x1:
+            x1, x2 = x2, x1
 
         p_box = (x1, y1, x2, y2)
         p_label = self.mapping[label]
