@@ -4,7 +4,6 @@ A project for CPSC 3750: Artificial Intelligence using PyTorch. We created a dat
 
 Afterwards, we created a smaller testing dataset from a "Where's Waldo?" influenced wallpaper where Waldo was resized and placed in a random location for each image.
 
-<img src="preprocess/character/waldo.png" alt="Waldo" width="200" />
 
 ## Source
 
