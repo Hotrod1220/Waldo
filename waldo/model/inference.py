@@ -28,10 +28,10 @@ def main() -> None:
 
     model.eval()
 
-    # with open('state/trainer.pkl', 'rb') as handle:
-    #     trainer = pickle.load(handle)
+    with open('state/trainer.pkl', 'rb') as handle:
+        trainer = pickle.load(handle)
 
-    # loader = trainer.testing
+    loader = trainer.testing
 
     mapping = {
         0: 'Not Waldo',
@@ -42,26 +42,26 @@ def main() -> None:
 
     predictor = Predictor()
     predictor.annotation = annotation
-    # predictor.loader = loader
+    predictor.loader = loader
     predictor.mapping = mapping
     predictor.model = model
     predictor.transformation = transformation
 
-    # # From loader
-    # predictor.from_loader(loader)
-    # predictor.plot(show=True, save=False)
+    # From loader
+    predictor.from_loader(loader)
+    predictor.plot(show=True, save=False)
 
 
-    # From image
-    images = [
-        file
-        for file in WALDO.glob('*.png')
-        if file.is_file()
-    ]
+    # # From image
+    # images = [
+    #     file
+    #     for file in WALDO.glob('*.png')
+    #     if file.is_file()
+    # ]
 
-    for image in images:
-        predictor.from_path(image)
-        predictor.plot(show=True, save=False)
+    # for image in images:
+    #     predictor.from_path(image)
+    #     predictor.plot(show=True, save=False)
 
 
     # # From random

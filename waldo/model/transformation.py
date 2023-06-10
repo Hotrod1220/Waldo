@@ -25,12 +25,6 @@ class Transformation(torch.nn.Module):
                 hue=0.2,
                 saturation=0.2
             ),
-            transforms.RandomErasing(
-                p=0.5,
-                ratio=(0.3, 3.3),
-                scale=(0.02, 0.33),
-                value='random'
-            ),
             transforms.GaussianBlur(kernel_size=3),
             transforms.RandomInvert(p=0.5),
             transforms.RandomAdjustSharpness(
