@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import shutil
 
 from pathlib import Path
+from waldo.constant import WALDO
 
 
 def main() -> None:
@@ -9,11 +12,8 @@ def main() -> None:
 
     missing = set()
 
-    waldo = Path.cwd().joinpath('dataset/waldo')
-
-    files = list(
-        waldo.glob('*')
-    )
+    glob = WALDO.glob('*')
+    files = list(glob)
 
     for file in files:
         name = file.stem

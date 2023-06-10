@@ -1,37 +1,28 @@
+from __future__ import annotations
+
 import pandas as pd
 import pickle
 
-from pathlib import Path, PurePath
+from pathlib import PurePath
+from waldo.constant import (
+    CWD,
+    DATASET,
+    NOT_WALDO,
+    SUFFIX,
+    WALDO
+)
 
 
 def main() -> None:
-    cwd = Path.cwd()
+    label, x1, y1, x2, y2 = 0, 0.0, 0.0, 0.0, 0.0
+    limit = 1000
 
-    # Create directories
-    dataset = cwd.joinpath('dataset')
-
-    waldo = dataset.joinpath('waldo')
-    not_waldo = dataset.joinpath('not_waldo')
-
-    waldo.mkdir(parents=True, exist_ok=True)
-    not_waldo.mkdir(parents=True, exist_ok=True)
-
-    suffix = [
-        '.bmp',
-        '.gif',
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.webp'
-    ]
-
-    label = 0
-    x1, y1, x2, y2 = 0.0, 0.0, 0.0, 0.0
+    glob = NOT_WALDO.glob('*/*')
 
     false = [
         {
             'filename': file.name,
-            'path': PurePath(file).relative_to(cwd).as_posix().replace(
+            'path': PurePath(file).relative_to(CWD).as_posix().replace(
                 'dataset',
                 'dataset'
             ),
@@ -41,16 +32,18 @@ def main() -> None:
             'x2': x2,
             'y2': y2
         }
-        for file in list(not_waldo.glob('*/*'))[:189]
-        if file.is_file() and file.suffix.lower() in suffix
+        for file in list(glob)[:limit]
+        if file.is_file() and file.suffix.lower() in SUFFIX
     ]
 
     label = 1
 
+    glob = WALDO.glob('*')
+
     true = [
         {
             'filename': file.name,
-            'path': PurePath(file).relative_to(cwd).as_posix().replace(
+            'path': PurePath(file).relative_to(CWD).as_posix().replace(
                 'dataset',
                 'dataset'
             ),
@@ -60,13 +53,13 @@ def main() -> None:
             'x2': x2,
             'y2': y2
         }
-        for file in waldo.glob('*')
-        if file.is_file() and file.suffix.lower() in suffix
+        for file in list(glob)[:limit]
+        if file.is_file() and file.suffix.lower() in SUFFIX
     ]
 
     true.extend(false)
 
-    path = dataset.joinpath('coordinates.pkl')
+    path = DATASET.joinpath('coordinates.pkl')
 
     with open(path, 'rb') as handle:
         coordinates = pickle.load(handle)
@@ -84,7 +77,7 @@ def main() -> None:
 
     dataframe = pd.DataFrame(true)
 
-    csv = dataset.joinpath('waldo.csv')
+    csv = DATASET.joinpath('waldo.csv')
     dataframe.to_csv(csv, index=False)
 
 

@@ -1,37 +1,19 @@
+from __future__ import annotations
+
 import pandas as pd
 
-from pathlib import Path
 from PIL import Image, ImageDraw
+from waldo.constant import DATASET, SUFFIX, WALDO
 
 
 def main() -> None:
-    cwd = Path.cwd()
-
-    # Create directories
-    dataset = cwd.joinpath('dataset')
-
-    waldo = dataset.joinpath('waldo')
-    not_waldo = dataset.joinpath('not_waldo')
-
-    waldo.mkdir(parents=True, exist_ok=True)
-    not_waldo.mkdir(parents=True, exist_ok=True)
-
-    suffix = [
-        '.bmp',
-        '.gif',
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.webp'
-    ]
-
-    path = dataset.joinpath('waldo.csv')
+    path = DATASET.joinpath('waldo.csv')
     dataframe = pd.read_csv(path)
 
     images = [
         file
-        for file in waldo.glob('*')
-        if file.is_file() and file.suffix.lower() in suffix
+        for file in WALDO.glob('*')
+        if file.is_file() and file.suffix.lower() in SUFFIX
     ]
 
     for image in images:

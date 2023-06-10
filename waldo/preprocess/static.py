@@ -1,45 +1,24 @@
-from pathlib import Path
-from PIL import Image
+from __future__ import annotations
+
+import pickle
+
+from PIL import Image, ImageDraw
 from random import SystemRandom
+from waldo.constant import (
+    CHARACTER,
+    DATASET,
+    STATIC,
+    SUFFIX,
+    TRANSFORM
+)
 
 
 def main() -> None:
-    cwd = Path.cwd()
-
-    # Create directories
-    character = cwd.joinpath('character')
-    dataset = cwd.joinpath('dataset')
-    wallpaper = cwd.joinpath('wallpaper')
-
-    static = dataset.joinpath('static')
-    original = wallpaper.joinpath('original')
-    transform = wallpaper.joinpath('transform')
-    upscale = wallpaper.joinpath('upscale')
-
-    static.mkdir(parents=True, exist_ok=True)
-    original.mkdir(parents=True, exist_ok=True)
-    transform.mkdir(parents=True, exist_ok=True)
-    upscale.mkdir(parents=True, exist_ok=True)
-
-    # Resize image
-    suffix = [
-        '.bmp',
-        '.gif',
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.webp'
-    ]
-
     source = [
         file
-        for file in transform.glob('*')
-        if file.is_file() and file.suffix.lower() in suffix
+        for file in TRANSFORM.glob('*')
+        if file.is_file() and file.suffix.lower() in SUFFIX
     ]
-
-    waldo = character.joinpath('waldo.png')
-    waldo = Image.open(waldo)
-    waldo = waldo.convert('RGBA')
 
     mapping = {
         '00': {
@@ -85,6 +64,10 @@ def main() -> None:
     w = 224
     h = 224
 
+    coordinates = {}
+
+    draw = False
+
     for i, path in enumerate(source, 0):
         i = str(i)
         i = i.zfill(2)
@@ -92,10 +75,7 @@ def main() -> None:
         section = mapping.get(i).get('section')
         size = mapping.get(i).get('size')
 
-        temporary = waldo.copy()
-        temporary.thumbnail(size)
-
-        scene = static.joinpath(i)
+        scene = STATIC.joinpath(i)
         scene.mkdir(parents=True, exist_ok=True)
 
         with Image.open(path) as image:
@@ -128,17 +108,36 @@ def main() -> None:
                 x = generator.randrange(0, maximum_x)
                 y = generator.randrange(0, maximum_y)
 
+                character = generator.choice(CHARACTER)
+                character.thumbnail(size)
+
                 crop.paste(
-                    temporary,
+                    character,
                     (x, y),
-                    temporary
+                    character
                 )
 
-                # crop.show()
+                box = (x, y, x + character.width, y + character.height)
+                box = tuple(float(coordinate) for coordinate in box)
+
+                coordinates[filename] = box
 
                 crop = crop.convert('RGB')
                 crop.save(destination)
 
+                # Draw the bounding box
+                if draw:
+                    draw = ImageDraw.Draw(crop)
+                    draw.rectangle(box, outline='green', width=2)
+                    crop.show()
+
+                # character.close()
+                # crop.close()
+
+    path = DATASET.joinpath('static.pkl')
+
+    with open(path, 'wb') as handle:
+        pickle.dump(coordinates, handle)
 
 
 if __name__ == '__main__':
