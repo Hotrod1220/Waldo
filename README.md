@@ -9,7 +9,6 @@ Afterwards, we created a smaller testing dataset from a "Where's Waldo?" influen
 
 ### Historical Artwork
 * https://www.kaggle.com/datasets/ikarus777/best-artworks-of-all-time
-
 * https://www.kaggle.com/datasets/ansonnnnn/historic-art
 
 

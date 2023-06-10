@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 
 from torch import nn
-from torchvision.models import resnet50
+from torchvision.models import mobilenet_v2
 
 
 class Model(nn.Module):
@@ -11,30 +11,39 @@ class Model(nn.Module):
         super().__init__()
 
         self.device = device
-        base = resnet50(weights='IMAGENET1K_V2')
-        children = base.children()
-        layers = list(children)[:-2]
-        self.base = nn.Sequential(*layers)
 
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-
-        self.flatten = nn.Flatten()
+        # MobileNet
+        base = mobilenet_v2(weights='DEFAULT')
 
         self.dense = nn.Sequential(
-            nn.Linear(base.fc.in_features, 1024),
+            nn.Linear(base.last_channel, 1024),
             nn.ReLU(),
-            nn.Dropout(p=0.10)
+            nn.Dropout(p=0.25)
         )
+
+        children = base.children()
+        children = list(children)
+
+        base = nn.Sequential(*children[:-1])
+        base.classifier = nn.Identity()
+
+        self.base = base
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.flatten = nn.Flatten()
 
         # Classification
         self.classification = nn.Sequential(
-            nn.Linear(1024, 256),
+            nn.Linear(1024, 512),
             nn.ReLU(),
-            nn.Dropout(p=0.50),
+            nn.Dropout(p=0.10),
+
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Dropout(p=0.10),
 
             nn.Linear(256, 128),
             nn.ReLU(),
-            nn.Dropout(p=0.25),
+            nn.Dropout(p=0.10),
 
             nn.Linear(128, 2),
             nn.Softmax(dim=1),
@@ -42,28 +51,16 @@ class Model(nn.Module):
 
         # Box
         self.box = nn.Sequential(
-            nn.Linear(1024, 256),
-            nn.ReLU(),
-            nn.Dropout(p=0.50),
-
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Dropout(p=0.25),
-
-            nn.Linear(128, 4),
+            nn.Linear(1024, 4),
             nn.Sigmoid(),
         )
 
     def forward(self, x: torch.Tensor) -> tuple(torch.Tensor, torch.Tensor):
         x = x.to(self.device)
 
-        # Pass through the base model
         x = self.base(x)
-
-        x = self.avgpool(x)
+        x = self.pool(x)
         x = self.flatten(x)
-
-        # Dense feature extraction
         x = self.dense(x)
 
         return (

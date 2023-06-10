@@ -6,6 +6,7 @@ import torch
 from pathlib import Path
 from PIL import Image, ImageDraw
 from typing import TYPE_CHECKING
+from waldo.constant import CWD
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -152,11 +153,7 @@ class Predictor():
         image = self.transformation(image)
         image = image.unsqueeze(0)
 
-        label, box = self.model(
-            image
-            .float()
-            .to('cpu')
-        )
+        label, box = self.model(image)
 
         label = label.detach().flatten()
         label = torch.argmax(label, dim=0).item()
@@ -221,6 +218,9 @@ class Predictor():
         t_box = (x1, y1, x2, y2)
         t_label = self.mapping[label]
 
+        print(p_box)
+        print(t_box)
+
         jaccard = self.iou(t_box, p_box)
 
         example = {}
@@ -245,11 +245,7 @@ class Predictor():
         image = self.transformation(image)
         image = image.unsqueeze(0)
 
-        label, box = self.model(
-            image
-            .float()
-            .to('cpu')
-        )
+        label, box = self.model(image)
 
         label = label.detach().flatten()
         label = torch.argmax(label, dim=0).item()
@@ -315,7 +311,7 @@ class Predictor():
 
                 path = example[file]['path']
 
-                full = preprocess.joinpath(path)
+                full = CWD.joinpath(path)
 
                 image = Image.open(full)
 

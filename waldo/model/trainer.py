@@ -3,13 +3,13 @@ from __future__ import annotations
 import torch
 
 from tabulate import tabulate
-from torch.nn import CrossEntropyLoss, SmoothL1Loss
+from torch.nn import CrossEntropyLoss, SmoothL1Loss, parameter
+from torch.optim.adam import Adam
 from tqdm import tqdm
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from model import Model
-    from torch.optim.adam import Adam
     from torch.utils.data.dataloader import DataLoader
 
 
@@ -33,6 +33,48 @@ class Trainer():
         self.training = training
         self.validating = validating
         self.optimizer = optimizer
+
+        self.classification_weight = 0.001
+        self.bounding_box_weight = 5
+
+    def _giou(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        inter_x1 = torch.max(prediction[:, 0], target[:, 0])
+        inter_y1 = torch.max(prediction[:, 1], target[:, 1])
+        inter_x2 = torch.min(prediction[:, 2], target[:, 2])
+        inter_y2 = torch.min(prediction[:, 3], target[:, 3])
+
+        inter_area = (
+            torch.clamp(inter_x2 - inter_x1 + 1, min=0) *
+            torch.clamp(inter_y2 - inter_y1 + 1, min=0)
+        )
+
+        pred_area = (
+            (prediction[:, 2] - prediction[:, 0] + 1) *
+            (prediction[:, 3] - prediction[:, 1] + 1)
+        )
+
+        target_area = (
+            (target[:, 2] - target[:, 0] + 1) *
+            (target[:, 3] - target[:, 1] + 1)
+        )
+
+        union_area = pred_area + target_area - inter_area
+        iou = inter_area / (union_area + 1e-6)
+
+        enclose_x1 = torch.min(prediction[:, 0], target[:, 0])
+        enclose_y1 = torch.min(prediction[:, 1], target[:, 1])
+        enclose_x2 = torch.max(prediction[:, 2], target[:, 2])
+        enclose_y2 = torch.max(prediction[:, 3], target[:, 3])
+
+        enclose_area = (
+            torch.clamp(enclose_x2 - enclose_x1 + 1, min=0) *
+            torch.clamp(enclose_y2 - enclose_y1 + 1, min=0)
+        )
+
+        return iou - (enclose_area - union_area) / (enclose_area + 1e-6)
+
+    def _giou_loss(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return 1.0 - self._giou(prediction, target)
 
     def _single_train(self) -> None:
         self.model.train()
@@ -67,14 +109,18 @@ class Trainer():
                 (classification_loss.item() * xsize)
             )
 
-            bounding_box_loss = self.sll(zp, z)
+            bounding_box_loss = self._giou_loss(zp, z).mean()
 
             total_bounding_box_loss = (
                 total_bounding_box_loss +
                 (bounding_box_loss.item() * xsize)
             )
 
-            total = bounding_box_loss + classification_loss
+            total = (
+                self.classification_weight * classification_loss +
+                self.bounding_box_weight * bounding_box_loss
+            )
+
             total.backward()
 
             self.optimizer.step()
@@ -88,7 +134,7 @@ class Trainer():
 
             total_classification = total_classification + ysize
 
-            total_iou = total_iou + self._iou(zp, z).sum().item()
+            total_iou = total_iou + self._giou(zp, z).sum().item()
 
         mean_classification_loss = (
             classification_loss /
@@ -145,7 +191,7 @@ class Trainer():
                 (classification_loss.item() * xsize)
             )
 
-            bounding_box_loss = self.sll(zp, z)
+            bounding_box_loss = self._giou_loss(zp, z).mean()
 
             total_bounding_box_loss = (
                 total_bounding_box_loss +
@@ -161,7 +207,7 @@ class Trainer():
 
             total_classification = total_classification + ysize
 
-            total_iou = total_iou + self._iou(zp, z).sum().item()
+            total_iou = total_iou + self._giou(zp, z).sum().item()
 
         mean_classification_loss = (
             total_classification_loss /
@@ -185,32 +231,6 @@ class Trainer():
             mean_bounding_box_loss,
             classification_accuracy,
             iou_score
-        )
-
-    def _iou(self, x: torch.Tensor, y: torch.Tensor) -> float:
-        x1 = torch.max(x[:, 0], y[:, 0])
-        y1 = torch.max(x[:, 1], y[:, 1])
-        x2 = torch.min(x[:, 2], y[:, 2])
-        y2 = torch.min(x[:, 3], y[:, 3])
-
-        intersection = (
-            torch.clamp(x2 - x1 + 1, min=0) *
-            torch.clamp(y2 - y1 + 1, min=0)
-        )
-
-        x_area = (
-            (x[:, 2] - x[:, 0] + 1) *
-            (x[:, 3] - x[:, 1] + 1)
-        )
-
-        y_area = (
-            (y[:, 2] - y[:, 0] + 1) *
-            (y[:, 3] - y[:, 1] + 1)
-        )
-
-        return (
-            intersection /
-            (x_area + y_area - intersection + 1e-6)
         )
 
     def start(self) -> None:
