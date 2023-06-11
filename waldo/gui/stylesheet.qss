@@ -1,0 +1,22 @@
+QComboBox {
+    combobox-popup: 0;
+}
+
+QListWidget {
+    background-color: #222222;
+    border: 0.5px solid 040404;
+    max-width: 100%;
+}
+
+QPushButton {
+    height: 20px;
+}
+
+#Predict {
+    background-color: #750116;
+}
+
+#Prediction {
+    font-size: 16px;
+    font-weight: 800;
+}
