@@ -37,6 +37,10 @@ class Trainer():
         self.classification_weight = 0.001
         self.bounding_box_weight = 5
 
+    def evaluate(self) -> float:
+        _, _, _, accuracy = self._single_validation()
+        return accuracy
+
     def _giou(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         inter_x1 = torch.max(prediction[:, 0], target[:, 0])
         inter_y1 = torch.max(prediction[:, 1], target[:, 1])
@@ -76,7 +80,7 @@ class Trainer():
     def _giou_loss(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         return 1.0 - self._giou(prediction, target)
 
-    def _single_train(self) -> None:
+    def _single_train(self) -> tuple[float, ...]:
         self.model.train()
 
         total_classification_loss = 0.0
@@ -160,7 +164,7 @@ class Trainer():
             iou_score
         )
 
-    def _single_validation(self) -> None:
+    def _single_validation(self) -> tuple[float, ...]:
         self.model.eval()
 
         total_classification_loss = 0.0
