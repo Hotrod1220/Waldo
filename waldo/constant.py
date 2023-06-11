@@ -24,8 +24,8 @@ CWD = walk(file).joinpath('waldo')
 
 MODEL = CWD.joinpath('model')
 PREPROCESS = CWD.joinpath('preprocess')
+DATASET = CWD.joinpath('dataset')
 
-DATASET = PREPROCESS.joinpath('dataset')
 WALLPAPER = PREPROCESS.joinpath('wallpaper')
 
 DYNAMIC = PREPROCESS.joinpath('dynamic')

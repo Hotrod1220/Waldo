@@ -3,7 +3,6 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import torch
 
-from pathlib import Path
 from PIL import Image, ImageDraw
 from typing import TYPE_CHECKING
 from waldo.constant import CWD
@@ -11,6 +10,7 @@ from waldo.constant import CWD
 if TYPE_CHECKING:
     from collections.abc import Callable
     from model import Model
+    from pathlib import Path
     from torch.utils.data import DataLoader
     from typing_extensions import Any
 
@@ -58,6 +58,111 @@ class Predictor():
             intersection /
             (x_area + y_area - intersection + 1e-6)
         )
+
+    def prediction(self, path: Path) -> dict[str, Any]:
+        image = Image.open(path)
+        image = self.transformation(image)
+        image = image.unsqueeze(0)
+
+        label, box = self.model(image)
+
+        label = label.detach().flatten()
+        label = torch.argmax(label, dim=0).item()
+
+        x1, y1, x2, y2 = box.squeeze().tolist()
+
+        x1 = min(1, x1)
+        y1 = min(1, y1)
+        x2 = min(1, x2)
+        y2 = min(1, y2)
+
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = max(0, x2)
+        y2 = max(0, y2)
+
+        w, h = (224, 224)
+        x1 = int(w * x1)
+        x2 = int(w * x2)
+        y1 = int(h * y1)
+        y2 = int(h * y2)
+
+        if y2 < y1:
+            y1, y2 = y2, y1
+
+        if x2 < x1:
+            x1, x2 = x2, x1
+
+        p_box = (x1, y1, x2, y2)
+        p_label = self.mapping[label]
+
+        return {
+            'prediction': {
+                'box': p_box,
+                'label': p_label,
+            }
+        }
+
+    def truth(self, path: Path) -> dict[str, Any]:
+        if path.name not in self.annotation.filename.tolist():
+            return None
+
+        x1 = (
+            self.annotation
+            .loc[self.annotation.filename == path.name, 'x1']
+            .squeeze()
+        )
+
+        y1 = (
+            self.annotation
+            .loc[self.annotation.filename == path.name, 'y1']
+            .squeeze()
+        )
+
+        x2 = (
+            self.annotation
+            .loc[self.annotation.filename == path.name, 'x2']
+            .squeeze()
+        )
+
+        y2 = (
+            self.annotation
+            .loc[self.annotation.filename == path.name, 'y2']
+            .squeeze()
+        )
+
+        label = (
+            self.annotation
+            .loc[self.annotation.filename == path.name, 'label']
+            .squeeze()
+        )
+
+        t_box = (x1, y1, x2, y2)
+        t_label = self.mapping[label]
+
+        return {
+            'truth': {
+                'box': t_box,
+                'label': t_label,
+            }
+        }
+
+    def _build(self, path: Path) -> dict[str, Any]:
+        p = self.prediction(path)
+        t = self.truth(path)
+
+        p_box = p.get('prediction').get('box')
+
+        result = {**p} if t is None else {**p, **t}
+
+        if t is not None:
+            t_box = t.get('truth').get('box')
+            jaccard = self.iou(t_box, p_box)
+            result['jaccard'] = jaccard
+
+        result['path'] = path
+
+        return result
 
     def from_loader(self, loader: DataLoader) -> list[dict[Any, Any]]:
         truths = []
@@ -148,241 +253,77 @@ class Predictor():
 
         self.examples = examples
 
-    def from_path(self, path: Path) -> list[dict[Any, Any]]:
-        image = Image.open(path)
-        image = self.transformation(image)
-        image = image.unsqueeze(0)
+    def from_path(self, path: Path) -> dict[str, Any]:
+        return self._build(path)
 
-        label, box = self.model(image)
+    def plot(self, prediction: dict[str, Any]) -> None:
+        sample = prediction['file']
 
-        label = label.detach().flatten()
-        label = torch.argmax(label, dim=0).item()
+        if 'truth' in sample:
+            t_box = sample['truth']['box']
+            t_label = sample['truth']['label']
 
-        x1, y1, x2, y2 = box.squeeze().tolist()
+        p_box = sample['prediction']['box']
+        p_label = sample['prediction']['label']
 
-        x1 = min(1, x1)
-        y1 = min(1, y1)
-        x2 = min(1, x2)
-        y2 = min(1, y2)
+        if 'jaccard' in sample:
+            jaccard = round(prediction['file']['jaccard'] * 100, 4)
 
-        x1 = max(0, x1)
-        y1 = max(0, y1)
-        x2 = max(0, x2)
-        y2 = max(0, y2)
+        path = prediction['file']['path']
 
-        w, h = (224, 224)
-        x1 = int(w * x1)
-        x2 = int(w * x2)
-        y1 = int(h * y1)
-        y2 = int(h * y2)
+        full = CWD.joinpath(path)
 
-        if y2 < y1:
-            y1, y2 = y2, y1
+        image = Image.open(full)
 
-        if x2 < x1:
-            x1, x2 = x2, x1
+        # Draw the ground truth bounding box
+        if 'truth' in sample and t_label == 'Waldo':
+                draw = ImageDraw.Draw(image)
+                draw.rectangle(t_box, outline='green', width=2)
 
-        p_box = (x1, y1, x2, y2)
-        p_label = self.mapping[label]
+        # Draw the prediction bounding box
+        if any(coordinate > 0 for coordinate in p_box):
+            draw = ImageDraw.Draw(image)
+            draw.rectangle(p_box, outline='red', width=2)
 
-        x1 = (
-            self.annotation
-            .loc[self.annotation.filename == path.name, 'x1']
-            .squeeze()
+        image = plt.imshow(image)
+
+        plt.xticks([])
+        plt.yticks([])
+
+        if 'truth' in sample:
+            expected = f"Expected: {t_label}"
+            index = f"Jaccard Index: {jaccard}"
+
+            plt.figtext(
+                0.50,
+                0.99,
+                index,
+                fontsize='large',
+                color='black',
+                ha='center',
+                va='top'
+            )
+
+            plt.figtext(
+                0.50,
+                0.93,
+                expected,
+                fontsize='large',
+                color='green',
+                ha='center',
+                va='top'
+            )
+
+        predicted = f"Predicted: {p_label}"
+
+        plt.figtext(
+            0.50,
+            0.05,
+            predicted,
+            fontsize='large',
+            color='red',
+            ha='center',
+            va='bottom'
         )
 
-        y1 = (
-            self.annotation
-            .loc[self.annotation.filename == path.name, 'y1']
-            .squeeze()
-        )
-
-        x2 = (
-            self.annotation
-            .loc[self.annotation.filename == path.name, 'x2']
-            .squeeze()
-        )
-
-        y2 = (
-            self.annotation
-            .loc[self.annotation.filename == path.name, 'y2']
-            .squeeze()
-        )
-
-        label = (
-            self.annotation
-            .loc[self.annotation.filename == path.name, 'label']
-            .squeeze()
-        )
-
-        t_box = (x1, y1, x2, y2)
-        t_label = self.mapping[label]
-
-        print(p_box)
-        print(t_box)
-
-        jaccard = self.iou(t_box, p_box)
-
-        example = {}
-
-        example[path.name] = {
-            'truth': {
-                'box': t_box,
-                'label': t_label,
-            },
-            'prediction': {
-                'box': p_box,
-                'label': p_label,
-            },
-            'jaccard': jaccard,
-            'path': path
-        }
-
-        self.examples = [example]
-
-    def from_random(self, path: Path) -> list[dict[Any, Any]]:
-        image = Image.open(path)
-        image = self.transformation(image)
-        image = image.unsqueeze(0)
-
-        label, box = self.model(image)
-
-        label = label.detach().flatten()
-        label = torch.argmax(label, dim=0).item()
-
-        x1, y1, x2, y2 = box.squeeze().tolist()
-
-        x1 = min(1, x1)
-        y1 = min(1, y1)
-        x2 = min(1, x2)
-        y2 = min(1, y2)
-
-        x1 = max(0, x1)
-        y1 = max(0, y1)
-        x2 = max(0, x2)
-        y2 = max(0, y2)
-
-        w, h = (224, 224)
-        x1 = int(w * x1)
-        x2 = int(w * x2)
-        y1 = int(h * y1)
-        y2 = int(h * y2)
-
-        if y2 < y1:
-            y1, y2 = y2, y1
-
-        if x2 < x1:
-            x1, x2 = x2, x1
-
-        p_box = (x1, y1, x2, y2)
-        p_label = self.mapping[label]
-
-        example = {}
-
-        example[path.name] = {
-            'prediction': {
-                'box': p_box,
-                'label': p_label,
-            },
-            'path': path
-        }
-
-        self.examples = [example]
-
-    def plot(self, save: bool = False, show: bool = True) -> None:
-        current = Path.cwd()
-
-        prediction = current.joinpath('prediction')
-        preprocess = current.joinpath('preprocess')
-
-        for example in self.examples:
-            for file in example:
-                filename = example[file]
-
-                if 'truth' in filename:
-                    t_box = filename['truth']['box']
-                    t_label = filename['truth']['label']
-
-                p_box = filename['prediction']['box']
-                p_label = filename['prediction']['label']
-
-                if 'jaccard' in filename:
-                    jaccard = round(example[file]['jaccard'] * 100, 4)
-
-                path = example[file]['path']
-
-                full = CWD.joinpath(path)
-
-                image = Image.open(full)
-
-                # Draw the ground truth bounding box
-                if 'truth' in filename and t_label == 'Waldo':
-                        draw = ImageDraw.Draw(image)
-                        draw.rectangle(t_box, outline='green', width=2)
-
-                # Draw the prediction bounding box
-                if any(coordinate > 0 for coordinate in p_box):
-                    draw = ImageDraw.Draw(image)
-                    draw.rectangle(p_box, outline='red', width=2)
-
-                image = plt.imshow(image)
-
-                plt.xticks([])
-                plt.yticks([])
-
-                if 'truth' in filename:
-                    expected = f"Expected: {t_label}"
-                    index = f"Jaccard Index: {jaccard}"
-
-                    plt.figtext(
-                        0.50,
-                        0.99,
-                        index,
-                        fontsize='large',
-                        color='black',
-                        ha='center',
-                        va='top'
-                    )
-
-                    plt.figtext(
-                        0.50,
-                        0.93,
-                        expected,
-                        fontsize='large',
-                        color='green',
-                        ha='center',
-                        va='top'
-                    )
-
-                predicted = f"Predicted: {p_label}"
-
-                plt.figtext(
-                    0.50,
-                    0.05,
-                    predicted,
-                    fontsize='large',
-                    color='red',
-                    ha='center',
-                    va='bottom'
-                )
-
-                if show:
-                    manager = plt.get_current_fig_manager()
-                    manager.window.state('zoomed')
-
-                    plt.show()
-
-                if save:
-                    fig = image.get_figure()
-
-                    filename = Path(path).name
-                    path = prediction.joinpath(filename)
-
-                    fig.savefig(
-                        path,
-                        bbox_inches='tight',
-                        dpi=300,
-                        transparent=True
-                    )
-
-                plt.close()
+        return image

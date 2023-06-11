@@ -5,6 +5,7 @@ matplotlib
 numpy
 pandas
 pillow
+PyQt6
 tabulate
 torchinfo
 tqdm

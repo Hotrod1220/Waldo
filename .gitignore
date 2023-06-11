@@ -1,7 +1,7 @@
 # waldo
+waldo/dataset/
 waldo/model/state
 waldo/preprocess/character/
-waldo/preprocess/dataset/
 waldo/preprocess/dynamic/
 waldo/preprocess/static/
 waldo/preprocess/wallpaper/
