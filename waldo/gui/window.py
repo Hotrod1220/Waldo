@@ -5,7 +5,7 @@ import torch
 
 from pathlib import Path
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIcon, QShortcut, QKeySequence
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QLabel,
     QMainWindow,
@@ -38,7 +38,8 @@ class Window(QMainWindow):
 
         self.setWindowTitle('Where\'s Waldo?')
 
-        self.icon = QIcon('asset/icon.png')
+        path = Path.cwd().joinpath('gui/asset/icon.png').as_posix()
+        self.icon = QIcon(path)
         self.setWindowIcon(self.icon)
 
         self.widget = QWidget()
