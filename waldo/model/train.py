@@ -45,7 +45,7 @@ def main() -> None:
         [trl, tel, val]
     )
 
-    batch_size = 32
+    batch_size = 16
 
     training = DataLoader(
         dataset=train,
@@ -68,22 +68,42 @@ def main() -> None:
     model = Model()
     model.device = device
 
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=0.0001
+    optimizer = torch.optim.AdamW(
+        [
+            {
+                'lr': 0.000001,
+                'params': model.classification.parameters(),
+                'weight_decay': 0.075
+            },
+            {
+                'lr': 0.001,
+                'params': model.box.parameters(),
+                'weight_decay': 0.025
+            },
+            {
+                'lr': 0.0001,
+                'params': model.base.parameters(),
+                'weight_decay': 0.025
+            },
+            {
+                'lr': 0.0001,
+                'params': model.dense.parameters(),
+                'weight_decay': 0.025
+            }
+        ]
     )
 
     torch.backends.cudnn.benchmark = True
 
     trainer = Trainer()
     trainer.device = device
-    trainer.epoch = 10
+    trainer.epoch = 15
     trainer.model = model
     trainer.optimizer = optimizer
     trainer.testing = testing
     trainer.training = training
     trainer.validating = validating
-    trainer.start()
+    history = trainer.start()
 
     torch.save(
         model.state_dict(),
@@ -92,6 +112,9 @@ def main() -> None:
 
     with open('state/trainer.pkl', 'wb') as handle:
         pickle.dump(trainer, handle)
+
+    with open('state/history.pkl', 'wb') as handle:
+        pickle.dump(history, handle)
 
 
 if __name__ == '__main__':

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import torch
-
 from torch import nn
 from torchvision.models import mobilenet_v2
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import torch
 
 
 class Model(nn.Module):
@@ -13,12 +15,12 @@ class Model(nn.Module):
         self.device = device
 
         # MobileNet
-        base = mobilenet_v2(weights='DEFAULT')
+        base = mobilenet_v2(weights='IMAGENET1K_V2')
 
         self.dense = nn.Sequential(
             nn.Linear(base.last_channel, 1024),
             nn.ReLU(),
-            nn.Dropout(p=0.25)
+            nn.Dropout(p=0.10)
         )
 
         children = base.children()
@@ -35,24 +37,24 @@ class Model(nn.Module):
         self.classification = nn.Sequential(
             nn.Linear(1024, 512),
             nn.ReLU(),
-            nn.Dropout(p=0.10),
+            nn.Dropout(p=0.25),
 
             nn.Linear(512, 256),
             nn.ReLU(),
-            nn.Dropout(p=0.10),
+            nn.Dropout(p=0.25),
 
             nn.Linear(256, 128),
             nn.ReLU(),
-            nn.Dropout(p=0.10),
+            nn.Dropout(p=0.25),
 
             nn.Linear(128, 2),
-            nn.Softmax(dim=1),
+            nn.Softmax(dim=1)
         )
 
         # Box
         self.box = nn.Sequential(
             nn.Linear(1024, 4),
-            nn.Sigmoid(),
+            nn.Sigmoid()
         )
 
     def forward(self, x: torch.Tensor) -> tuple(torch.Tensor, torch.Tensor):

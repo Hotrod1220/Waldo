@@ -257,26 +257,24 @@ class Predictor():
         return self._build(path)
 
     def plot(self, prediction: dict[str, Any]) -> None:
-        sample = prediction['file']
+        if 'truth' in prediction:
+            t_box = prediction['truth']['box']
+            t_label = prediction['truth']['label']
 
-        if 'truth' in sample:
-            t_box = sample['truth']['box']
-            t_label = sample['truth']['label']
+        p_box = prediction['prediction']['box']
+        p_label = prediction['prediction']['label']
 
-        p_box = sample['prediction']['box']
-        p_label = sample['prediction']['label']
+        if 'jaccard' in prediction:
+            jaccard = round(prediction['jaccard'] * 100, 4)
 
-        if 'jaccard' in sample:
-            jaccard = round(prediction['file']['jaccard'] * 100, 4)
-
-        path = prediction['file']['path']
+        path = prediction['path']
 
         full = CWD.joinpath(path)
 
         image = Image.open(full)
 
         # Draw the ground truth bounding box
-        if 'truth' in sample and t_label == 'Waldo':
+        if 'truth' in prediction and t_label == 'Waldo':
                 draw = ImageDraw.Draw(image)
                 draw.rectangle(t_box, outline='green', width=2)
 
@@ -290,7 +288,7 @@ class Predictor():
         plt.xticks([])
         plt.yticks([])
 
-        if 'truth' in sample:
+        if 'truth' in prediction:
             expected = f"Expected: {t_label}"
             index = f"Jaccard Index: {jaccard}"
 

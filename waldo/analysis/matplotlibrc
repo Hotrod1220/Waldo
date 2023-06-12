@@ -1,0 +1,23 @@
+axes.axisbelow: True
+axes.edgecolor: "#ffffff"
+axes.facecolor: "#1e1e1e"
+axes.grid: True
+axes.labelcolor: "#ffffff"
+axes.labelpad: 20
+axes.labelsize: 14
+axes.labelweight: 500
+axes.titlepad: 20
+axes.titlesize: 16
+axes.titleweight: 600
+figure.facecolor: (0, 0, 0, 0)
+grid.color: "#383838"
+legend.fontsize: 12
+legend.title_fontsize: 14
+savefig.facecolor: (0, 0, 0, 0)
+text.color: "#ffffff"
+xtick.color: "#ffffff"
+xtick.labelsize: 14
+xtick.major.pad: 5.0
+ytick.color: "#ffffff"
+ytick.labelsize: 14
+ytick.major.pad: 5.0
