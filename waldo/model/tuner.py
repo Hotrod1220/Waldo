@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pickle
 import torch
 
 from dataset import WaldoDataset
@@ -14,7 +13,7 @@ from waldo.constant import DATASET
 from torch.optim import AdamW, RMSprop
 
 
-def main():
+def main() -> None:
     current = Path.cwd()
 
     csv = DATASET.joinpath('waldo.csv')
@@ -108,7 +107,7 @@ def main():
                         }
 
     print(f'Best score: {best_score}')
-    print(f'Best params: {best_params}')
+    print(f'Best parameters: {best_params}')
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import pickle
 import torch
@@ -47,9 +48,18 @@ def main() -> None:
     predictor.model = model
     predictor.transformation = transformation
 
-    # From loader
-    predictor.from_loader(loader)
-    predictor.plot(show=True, save=False)
+    path = WALDO.joinpath('0_35.png')
+    prediction = predictor.from_path(path)
+    predictor.plot(prediction)
+
+    plt.savefig(
+        'prediction.png',
+        bbox_inches='tight',
+        dpi=300,
+        format='png'
+    )
+
+    plt.show()
 
 
     # # From image

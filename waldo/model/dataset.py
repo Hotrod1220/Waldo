@@ -52,7 +52,7 @@ class WaldoDataset(Dataset):
         image = Image.open(location)
         image = self.transformation(image)
 
-        label = torch.tensor(label, dtype=torch.long)
+        label = torch.tensor(label, dtype=torch.int64)
         box = torch.tensor(box, dtype=torch.float)
 
         return (image, label, box)
