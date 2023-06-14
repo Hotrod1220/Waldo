@@ -129,7 +129,7 @@ class Window(QMainWindow):
 
         path = STATE.joinpath('model.pth')
 
-        state = torch.load(path)
+        state = torch.load(path, map_location = self.model.device)
         self.model.load_state_dict(state)
 
         self.model.eval()
