@@ -20,7 +20,6 @@ class Dropdown(QWidget):
         self.box = QComboBox()
         self.box.addItem('Folder')
         self.box.addItem('File')
-        self.box.addItem('Loader')
 
         self.box.setSizePolicy(
             QSizePolicy.Policy.Expanding,

@@ -27,14 +27,8 @@ class Canvas(FigureCanvasQTAgg):
         self.draw()
 
     def cleanup(self) -> None:
-        for text in self.ax.texts:
-            text.remove()
-
-        for patch in self.ax.patches:
-            patch.remove()
-
-        for line in self.ax.lines:
-            line.remove()
+        self.ax.clear()
+        self.ax.set_axis_off()
 
         if self.image is not None:
             self.image.remove()

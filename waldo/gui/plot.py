@@ -23,11 +23,6 @@ class Plot(QWidget):
 
         self.canvas = Canvas()
 
-        # self.scroll = QScrollArea(self)
-        # self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        # self.scroll.setWidgetResizable(True)
-        # self.scroll.setWidget(self.canvas)
-
         self.layout = QVBoxLayout(self)
         self.layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.layout.addWidget(self.canvas)

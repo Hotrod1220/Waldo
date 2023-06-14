@@ -1,7 +1,6 @@
 # waldo
 waldo/analysis/*.png
-waldo/dataset/
-waldo/model/state
+waldo/dataset/original/
 waldo/preprocess/character/
 waldo/preprocess/dynamic/
 waldo/preprocess/static/
@@ -10,7 +9,6 @@ waldo/presentation/images/
 
 *.7z
 *.bat
-*.pkl
 *.xlsx
 *.zip
 *.sublime-project
