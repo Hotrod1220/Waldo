@@ -22,7 +22,6 @@ from model.prediction import Predictor
 from model.transformation import Transformation
 from waldo.constant import (
     DATASET,
-    MODEL,
     STATE,
     SUFFIX,
     WALDO
@@ -92,11 +91,11 @@ class Window(QMainWindow):
         self.layout.addLayout(self.elayout)
         self.layout.setStretch(2, 1)
 
+        self.explorer.browse.clicked.connect(self.on_click_load)
         self.explorer.list.currentItemChanged.connect(self.on_selection_change)
+        self.explorer.next.clicked.connect(self.on_click_next)
         self.explorer.previous.clicked.connect(self.on_click_previous)
         self.explorer.predict.clicked.connect(self.on_click_predict)
-        self.explorer.browse.clicked.connect(self.on_click_load)
-        self.explorer.next.clicked.connect(self.on_click_next)
 
     def _predict(self) -> None:
         if self.explorer.list.count() == 0:
@@ -121,13 +120,14 @@ class Window(QMainWindow):
 
         self.prediction.setText(f"Prediction: {label}")
 
+        self.plot.canvas.cleanup()
         self.plot.display(result)
 
     def load(self) -> None:
         self.model = Model()
         self.model.device = 'cpu'
 
-        path = MODEL.joinpath('state/model.pth')
+        path = STATE.joinpath('model.pth')
 
         state = torch.load(path)
         self.model.load_state_dict(state)
@@ -161,12 +161,15 @@ class Window(QMainWindow):
 
                     files = [
                         file.as_posix()
-                        for file in Path(path).glob('*')
+                        for file in Path(path).rglob('*')
                         if file.suffix in SUFFIX and
                         file.exists() and file.is_file()
                     ]
 
+                    self.explorer.list.currentItemChanged.disconnect(self.on_selection_change)
                     self.explorer.list.clear()
+                    self.explorer.list.currentItemChanged.connect(self.on_selection_change)
+
                     self.explorer.add(files)
 
             case 1:
@@ -180,19 +183,6 @@ class Window(QMainWindow):
 
                 if file:
                     self.explorer.insert(file)
-
-            case 2:
-                # Load from a loader
-                directory = STATE.as_posix()
-
-                dialog.setDirectory(directory)
-                dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-                dialog.setNameFilter('Pickle (*.pkl)')
-
-                path, _ = dialog.getOpenFileName(self, 'Select File')
-
-                if path:
-                    self.explorer.list.clear()
 
         self.explorer.list.setFocus()
 

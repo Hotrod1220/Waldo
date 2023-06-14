@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from model import Model
     from torch.utils.data.dataloader import DataLoader
-    from torch.optim import Adam
+    from torch.optim import AdamW
 
 
 class Trainer():
@@ -19,7 +19,7 @@ class Trainer():
         device: str | torch.device = 'cpu',
         epoch: int = 0,
         model: Model = None,
-        optimizer: Adam = None,
+        optimizer: AdamW = None,
         testing: DataLoader = None,
         training: DataLoader = None,
         validating: DataLoader = None
@@ -122,11 +122,6 @@ class Trainer():
             total = (
                 (self.c_weight * classification_loss) +
                 (self.b_weight * bounding_box_loss)
-            )
-
-            total = (
-                classification_loss +
-                bounding_box_loss
             )
 
             total.backward()
